@@ -1,6 +1,6 @@
 ---
 name: anki-near-homophones
-description: User provides a word list (one line per card; a line can have multiple words). Source words and near-homophones must exist in a specified English vocabulary deck. Uses anki-mcp-server to find near-homophones (only from that deck), adds 助记. Output cards are Cloze: front = "word：{{c1::词性. 释义}}" per line, back = "助记：...". Use when the user asks to find 近形词、填空卡片、助记 from a word list or to add such cards.
+description: "User provides a word list (one line per card; a line can have multiple words). Source words and near-homophones must exist in a specified English vocabulary deck. Uses anki-mcp-server to find near-homophones (only from that deck), adds 助记. Output cards are Cloze: front = \"word：{{c1::词性. 释义}}\" per line, back = \"助记：...\". Use when the user asks to find 近形词、填空卡片、助记 from a word list or to add such cards."
 ---
 
 # Anki 近形词工作流
