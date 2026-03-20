@@ -1,9 +1,51 @@
 ---
-name: anki-near-homophones
-description: "User provides a word list (one line per card; a line can have multiple words). Source words and near-homophones must exist in a specified English vocabulary deck. Uses anki-mcp-server to find near-homophones (only from that deck), adds 助记. Output cards are Cloze: front = \"word：{{c1::词性. 释义}}\" per line, back = \"助记：...\". Use when the user asks to find 近形词、填空卡片、助记 from a word list or to add such cards."
+name: anki-word
+description: |
+   支持三种输入模式：
+   1. 近形词积累：输入单词/词组列表（每行一组），自动追加到近形词 buffer，待“整理卡片”时批量处理。
+   2. Q&A 单词卡积累：行首带 ! 的单词（如 !affect），自动追加到 Q&A buffer，待“整理卡片”时批量生成问答卡。
+   3. 整理卡片：用户说“整理卡片”时，依次处理两个 buffer，批量生成卡片并清空 buffer。
+   所有 buffer 跨对话持久化于 /memories/repo/word-buffer.md。
 ---
 
-# Anki 近形词工作流
+# Anki 单词卡工作流
+
+## 输入模式识别与积累机制
+
+本技能支持三种输入模式，所有输入均持久化到 `/memories/repo/word-buffer.md`，直到“整理卡片”后清空：
+
+- **模式 A（近形词积累）**：无 `!` 前缀的单词/词组列表（每行一组），自动追加到 buffer 的“近形词”区块，回复“已记录 X 行（共 Y 行）”。
+- **模式 B（Q&A 积累）**：行首带 `!` 的单词（如 `!affect`），自动追加到 buffer 的“Q&A”区块，回复“已记录 X 个词（共 Y 个）”。
+- **模式 C（整理卡片）**：用户说“整理卡片”时，依次处理两个区块，批量生成卡片并清空 buffer。
+
+### Buffer 文件结构
+
+文件路径：`/memories/repo/word-buffer.md`
+结构示例：
+```
+## 近形词
+affect
+desert
+their there they're
+
+## Q&A
+affect
+desert
+```
+
+追加时用 memory 工具写入；“整理卡片”后清空文件。
+
+---
+
+## Q&A 单词卡子流程
+
+整理卡片时，若 Q&A buffer 非空：
+1. 首次询问并记住“日常卡组”名称（本次对话内有效）。
+2. 为每个词生成 `/IPA/` + 中文词义 + 英文例句 + 中文译注。
+3. 批量展示预览，明确征求用户确认后，调用 batch_create_notes 写入。
+4. 卡片格式：Basic；Front=`单词`；Back=`/音标/\n词义\n例句\n（译文）`
+
+---
 
 **输入**：用户给出一个**单词列表**，**每行对应一张卡片**；**一行内可以写多个单词**（同一张卡片上的多个词，如易混词组）。  
 **约束**：须指定**英语单词卡组**；**词源及其近形词必须都在该英语单词卡组内存在**，不在卡组内的词不得作为词源或近形词写入近形词卡片。  
@@ -168,7 +210,12 @@ wrinkle：{{c1::n. 皱纹、v. 起皱}}
 - **词型相近**：优先用「多/少哪字母」、拼写口诀、语义一句区分。
 - 每条提示控制在 1～2 句话，便于写进卡片背面或「记忆提示」字段。
 
+
 ## 原则
+
+- **输入积累持久化**：所有输入均写入 `/memories/repo/word-buffer.md`，跨对话持久，直到“整理卡片”后清空。
+- **Q&A 卡独立校验**：Q&A buffer 不校验词源是否在英语单词卡组内。
+- **整理卡片统一触发**：仅当用户说“整理卡片”时，依次处理两个区块（非空才处理），全部完成后清空 buffer。
 
 - **输入**：用户给出单词列表，**每行对应一张卡片**；**一张卡片可以包含多个单词**（一行内用空格/逗号/斜杠分隔）。
 - **词源与近形词须在英语单词卡组内存在**：须先指定英语单词卡组并拉取卡组词表；仅当词源及所选近形词均在该卡组内时，才可纳入近形词卡片；不在卡组内的词排除或标注。
